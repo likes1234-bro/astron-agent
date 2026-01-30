@@ -28,7 +28,7 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         env:
         - name: CONSOLE_CASDOOR_URL
-          value: {{ printf "%s:%d" .Values.global.hostBaseAddress (.Values.casdoor.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.casdoor.externalUrl" . | quote }}
         - name: CONSOLE_CASDOOR_ID
           value: {{ .Values.consoleFrontend.env.casdoorId | quote }}
         - name: CONSOLE_CASDOOR_APP

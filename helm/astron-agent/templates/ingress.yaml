@@ -2,6 +2,42 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: {{ include "astron-agent.fullname" . }}-casdoor
+  labels:
+    {{- include "astron-agent.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    # Session affinity and cookie handling for Casdoor subpath
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Prefix /casdoor;
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - {{ if .host }}host: {{ .host | quote }}{{ end }}
+      http:
+        paths:
+          - path: /casdoor(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "astron-agent.fullname" $ }}-casdoor
+                port:
+                  number: 8000
+    {{- end }}
+---
+{{- end -}}
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: {{ include "astron-agent.fullname" . }}
   labels:
     {{- include "astron-agent.labels" . | nindent 4 }}
@@ -38,9 +74,17 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - {{ if .host }}host: {{ .host | quote }}{{ end }}
       http:
         paths:
+          # MinIO API
+          - path: /minio
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "astron-agent.fullname" $ }}-minio
+                port:
+                  number: 9000
           # SSE API for workflow chat completions
           - path: /workflow/v1/chat/completions
             pathType: Prefix
@@ -62,57 +106,16 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "astron-agent.fullname" . }}-console-api-chat
-  labels:
-    {{- include "astron-agent.labels" . | nindent 4 }}
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /chat-message/$2
-    nginx.ingress.kubernetes.io/proxy-buffering: "off"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
-    # Upload size limit
-    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      add_header X-Frame-Options "SAMEORIGIN" always;
-      add_header X-XSS-Protection "1; mode=block" always;
-      add_header X-Content-Type-Options "nosniff" always;
-    {{- with .Values.ingress.annotations }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
-  rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
-      http:
-        paths:
-          - path: /console-api/chat-message(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: {{ include "astron-agent.fullname" $ }}-console-hub
-                port:
-                  number: {{ $.Values.consoleHub.service.port }}
-    {{- end }}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: {{ include "astron-agent.fullname" . }}-console-api
   labels:
     {{- include "astron-agent.labels" . | nindent 4 }}
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
+    # Unified Hub Ingress with correct rewrites
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
-    # Upload size limit
     nginx.ingress.kubernetes.io/proxy-body-size: "20m"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
@@ -129,9 +132,11 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - {{ if .host }}host: {{ .host | quote }}{{ end }}
       http:
         paths:
+          # Specific rewrite for chat-message if backend needs it, 
+          # but usually /$2 covers everything under /console-api
           - path: /console-api(/|$)(.*)
             pathType: ImplementationSpecific
             backend:

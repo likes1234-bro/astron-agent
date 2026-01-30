@@ -148,3 +148,29 @@ Core service URLs - 用于生成完整的服务 URL（包括协议和端口）
 {{- define "astron-agent.coreWorkflow.url" -}}
 {{- printf "http://%s-core-workflow:%d" (include "astron-agent.fullname" .) (.Values.coreWorkflow.service.port | int) }}
 {{- end }}
+
+{{/*
+Get Casdoor external URL
+*/}}
+{{- define "astron-agent.casdoor.externalUrl" -}}
+{{- if .Values.ingress.enabled -}}
+{{- printf "%s/casdoor" .Values.global.hostBaseAddress -}}
+{{- else if eq .Values.casdoor.service.type "NodePort" -}}
+{{- printf "%s:%d" .Values.global.hostBaseAddress (.Values.casdoor.service.nodePort | int) -}}
+{{- else -}}
+{{- printf "%s:%d" .Values.global.hostBaseAddress (.Values.casdoor.service.port | int) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get MinIO external URL
+*/}}
+{{- define "astron-agent.minio.externalUrl" -}}
+{{- if .Values.ingress.enabled -}}
+{{- printf "%s/minio" .Values.global.hostBaseAddress -}}
+{{- else if eq .Values.minio.service.type "NodePort" -}}
+{{- printf "%s:%d" .Values.global.hostBaseAddress (.Values.minio.service.nodePort | int) -}}
+{{- else -}}
+{{- printf "%s:%d" .Values.global.hostBaseAddress (.Values.minio.service.apiPort | int) -}}
+{{- end -}}
+{{- end -}}

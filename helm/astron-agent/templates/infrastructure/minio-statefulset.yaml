@@ -45,7 +45,7 @@ spec:
               name: {{ include "astron-agent.fullname" . }}-minio-secret
               key: root-password
         - name: MINIO_SERVER_URL
-          value: {{ printf "%s:%d" .Values.global.hostBaseAddress (.Values.minio.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.minio.externalUrl" . | quote }}
         ports:
         - name: api
           containerPort: 9000

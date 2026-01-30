@@ -45,13 +45,13 @@ spec:
         {{- range $key, $value := .Values.consoleHub.env }}
         {{- if or (eq $key "consoleCasdoorUrl") (eq $key "oauth2IssuerUri") }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.casdoor.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.casdoor.externalUrl" $ | quote }}
         {{- else if eq $key "consoleDomain" }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ $.Values.global.hostBaseAddress | quote }}
+          value: {{ $.Values.global.hostBaseAddress | replace "http://" "" | replace "https://" "" | quote }}
         {{- else if eq $key "ossRemoteEndpoint" }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.minio.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.minio.externalUrl" $ | quote }}
         {{- else if or (eq $key "platformAppId") (eq $key "sparkAppId") (eq $key "sparkRtasrAppid") (eq $key "sparkImageAppId") }}
         - name: {{ upper (snakecase $key) }}
           value: {{ $.Values.global.platformAppId | quote }}

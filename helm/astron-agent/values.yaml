@@ -2,24 +2,28 @@
 global:
   imageRegistry: ghcr.io/iflytek/astron-agent
   imagePullPolicy: IfNotPresent
-  storageClass: ""
+  # Default storage class for persistent volumes
+  # Huawei Cloud (CCE): csi-disk, ssd, sas
+  # Alibaba Cloud (ACK): alibabacloud-cn-hangzhou.storage-standard, ssd, efficiency
+  # Use kubectl get sc to list available storage classes
+  storageClass: "csi-disk"
   astronAgentVersion: latest
-  # Host base address for external access (e.g., http://your-domain.com)
+  # Host base address for external access (e.g., http://astron-agent.example.com)
   # Used for MinIO server URL and other external endpoints
   hostBaseAddress: "http://astron-agent.example.com"
   # iFLYTEK Platform API Configuration
   # You can get your own API key and secret on the iFLYTEK Open Platform official website
   # SPARK LLM API: https://xinghuo.xfyun.cn/sparkapi
   # IMAGE-GEN API: https://www.xfyun.cn/services/wtop
-  platformAppId: "your-app-id"
-  platformApiKey: "your-api-key"
-  platformApiSecret: "your-api-secret"
+  platformAppId: "fb13b7e9"
+  platformApiKey: "MWIxM2I3N2MwNjhiYzhjMjdmYzZiNmEz"
+  platformApiSecret: "c44730d2d88e51f6944d3d96ff9ff7e7"
   # For RTASR API, you need to apply for a separate API key from the console website
   # https://console.xfyun.cn/services/rta
-  sparkRtasrApiKey: "your-rtasr-api-key"
+  sparkRtasrApiKey: "fb13b7e9"
   # For Spark LLM API, there will be an additional API password from the console website
   # https://console.xfyun.cn/services/bm4
-  sparkApiPassword: "your-api-password"
+  sparkApiPassword: "ce6e745dbe029fd08cd8c34bb065dbd3"
   # For virtual-man API, you need to apply for a separate API key from the console website (https://virtual-man.xfyun.cn/console/applications)
   sparkVirtualManAppId: "your-virtual-man-app-id"
   sparkVirtualManApiKey: "your-virtual-man-api-key"
@@ -119,11 +123,11 @@ minio:
     rootUser: minioadmin
     rootPassword: minioadmin123
   service:
-    type: NodePort
+    type: ClusterIP
     apiPort: 9000
     consolePort: 9001
-    nodePort: 30900
-    consoleNodePort: 30901
+    nodePort: 0
+    consoleNodePort: 0
   healthCheck:
     interval: 30
     timeout: 10
@@ -142,9 +146,9 @@ casdoor:
       memory: "1Gi"
       cpu: "1000m"
   service:
-    type: NodePort
+    type: ClusterIP
     port: 8000
-    nodePort: 30800
+    nodePort: 0
   env:
     ginMode: release
   mysql:
@@ -466,11 +470,11 @@ consoleHub:
     port: 8080
   env:
     # Casdoor Configuration
-    consoleCasdoorUrl: ""
+    consoleCasdoorUrl: "http://astron-agent.example.com/casdoor"
     consoleCasdoorId: "astron-agent-client"
     consoleCasdoorApp: "astron-agent-app"
     consoleCasdoorOrg: "built-in"
-    consoleDomain: ""
+    consoleDomain: "astron-agent.example.com"
     # MySQL Configuration
     mysqlUrl: "jdbc:mysql://astron-agent-mysql:3306/astron_console"
     mysqlUser: root
@@ -562,14 +566,14 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: astron-agent.example.com
+    - host: ""
       paths:
         - path: /
           pathType: Prefix
   tls:
     - secretName: astron-agent-tls
       hosts:
-        - astron-agent.example.com
+        - ""
 
 # Service Account
 serviceAccount:

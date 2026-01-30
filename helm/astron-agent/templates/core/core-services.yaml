@@ -50,7 +50,7 @@ spec:
         {{- range $key, $value := $serviceConfig.env }}
         {{- if and (eq $key "ossDownloadHost") (or (eq $serviceName "coreAitools") (eq $serviceName "coreWorkflow")) }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.minio.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.minio.externalUrl" $ | quote }}
         {{- else if and (eq $key "aiAppId") (eq $serviceName "coreAitools") }}
         - name: {{ upper (snakecase $key) }}
           value: {{ $.Values.global.platformAppId | quote }}
@@ -128,9 +128,6 @@ spec:
           subPath: config.toml
         - name: logs
           mountPath: /opt/tenant/logs
-        - name: localtime
-          mountPath: /etc/localtime
-          readOnly: true
         {{- else if eq $serviceName "coreDatabase" }}
         - name: config
           mountPath: /opt/core/memory/database/config.env
@@ -195,12 +192,6 @@ spec:
       {{- if ne $serviceName "coreAgent" }}
       - name: logs
         emptyDir: {}
-      {{- end }}
-      {{- if eq $serviceName "coreTenant" }}
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-          type: File
       {{- end }}
 ---
 apiVersion: v1
