@@ -88,5 +88,5 @@ spec:
       {{- end }}
       resources:
         requests:
-          storage: 10Gi
+          storage: {{ .Values.casdoor.mysql.persistence.size | default "10Gi" }}
 {{- end }}

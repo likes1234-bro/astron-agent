@@ -11,7 +11,7 @@
       "enableSignUp": true,
       "clientId": "astron-agent-client",
       "redirectUris": [
-        "${HOST_BASE_ADDRESS}/callback"
+        "${CONSOLE_DOMAIN}/callback"
       ],
       "tokenFormat": "JWT",
       "tokenFields": [],

@@ -50,7 +50,7 @@ spec:
         {{- range $key, $value := $serviceConfig.env }}
         {{- if and (eq $key "ossDownloadHost") (or (eq $serviceName "coreAitools") (eq $serviceName "coreWorkflow")) }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.minio.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.minio.publicUrl" $ | quote }}
         {{- else if and (eq $key "aiAppId") (eq $serviceName "coreAitools") }}
         - name: {{ upper (snakecase $key) }}
           value: {{ $.Values.global.platformAppId | quote }}

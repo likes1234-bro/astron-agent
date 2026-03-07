@@ -1,0 +1,56 @@
+global:
+  # 公网访问地址。
+  # 如果通过公网 IP 访问，填写公网 IP，例如：http://47.250.187.146
+  # 如果通过域名访问，填写域名，例如：http://astron-agent.example.com
+  hostBaseAddress: "http://your-public-ip-or-domain"
+
+  # 讯飞平台参数。
+  # 这里不要提交个人真实配置，部署前按实际环境填写。
+  platformAppId: "your-app-id"
+  platformApiKey: "your-api-key"
+  platformApiSecret: "your-api-secret"
+
+  # ACK 集群常用的存储类。
+  # 如果你的集群使用其他 StorageClass，请按实际情况修改。
+  storageClass: "alicloud-disk-topology-alltype"
+
+ingress:
+  # 通过 Ingress 暴露服务。
+  enabled: true
+
+  # IngressClass 名称。
+  # ACK 中安装 ingress-nginx 时通常使用 nginx。
+  className: nginx
+
+  # 如需补充阿里云 SLB 或 ingress-nginx 注解，可在这里追加。
+  annotations: {}
+
+  # 如果通过公网 IP 访问，保持空数组即可。
+  # 如果通过域名访问，改成下面这种形式：
+  # hosts:
+  #   - host: astron-agent.example.com
+  hosts: []
+
+  # 当前默认不启用 TLS。
+  tls: []
+
+casdoor:
+  mysql:
+    persistence:
+      # Casdoor MySQL 数据盘大小。
+      size: 20Gi
+
+postgresql:
+  persistence:
+    # PostgreSQL 数据盘大小。
+    size: 20Gi
+
+mysql:
+  persistence:
+    # MySQL 数据盘大小。
+    size: 20Gi
+
+redis:
+  persistence:
+    # Redis 数据盘大小。
+    size: 20Gi

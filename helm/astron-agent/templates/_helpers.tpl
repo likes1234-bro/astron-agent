@@ -60,6 +60,100 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Return the public host base address without a trailing slash.
+Expected format: http://<public-ip-or-domain>
+*/}}
+{{- define "astron-agent.publicHostBase" -}}
+{{- trimSuffix "/" (.Values.global.hostBaseAddress | default "http://127.0.0.1") -}}
+{{- end }}
+
+{{/*
+Return the primary ingress host.
+*/}}
+{{- define "astron-agent.ingress.host" -}}
+{{- if and .Values.ingress.enabled .Values.ingress.hosts (gt (len .Values.ingress.hosts) 0) -}}
+{{- (index .Values.ingress.hosts 0).host | default "" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public scheme for ingress access.
+*/}}
+{{- define "astron-agent.ingress.scheme" -}}
+{{- if .Values.ingress.tls -}}
+https
+{{- else -}}
+http
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public base URL for ingress access.
+*/}}
+{{- define "astron-agent.ingress.publicUrl" -}}
+{{- $host := include "astron-agent.ingress.host" . -}}
+{{- if $host -}}
+{{- printf "%s://%s" (include "astron-agent.ingress.scheme" .) $host -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public URL for the gateway entrypoint.
+*/}}
+{{- define "astron-agent.gateway.publicUrl" -}}
+{{- if .Values.gateway.publicUrl -}}
+{{- trimSuffix "/" .Values.gateway.publicUrl -}}
+{{- else if and .Values.ingress.enabled (include "astron-agent.ingress.host" .) -}}
+{{- include "astron-agent.ingress.publicUrl" . -}}
+{{- else if eq .Values.gateway.service.type "NodePort" -}}
+{{- printf "%s:%d" (include "astron-agent.publicHostBase" .) (.Values.gateway.service.nodePort | int) -}}
+{{- else -}}
+{{- include "astron-agent.publicHostBase" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public URL for Casdoor.
+*/}}
+{{- define "astron-agent.casdoor.publicUrl" -}}
+{{- if .Values.casdoor.publicUrl -}}
+{{- trimSuffix "/" .Values.casdoor.publicUrl -}}
+{{- else if and .Values.ingress.enabled (include "astron-agent.ingress.host" .) -}}
+{{- include "astron-agent.ingress.publicUrl" . -}}
+{{- else if eq .Values.casdoor.service.type "NodePort" -}}
+{{- printf "%s:%d" (include "astron-agent.publicHostBase" .) (.Values.casdoor.service.nodePort | int) -}}
+{{- else -}}
+{{- include "astron-agent.publicHostBase" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public URL for MinIO API access.
+*/}}
+{{- define "astron-agent.minio.publicUrl" -}}
+{{- if .Values.minio.publicUrl -}}
+{{- trimSuffix "/" .Values.minio.publicUrl -}}
+{{- else if eq .Values.minio.service.type "NodePort" -}}
+{{- printf "%s:%d" (include "astron-agent.publicHostBase" .) (.Values.minio.service.nodePort | int) -}}
+{{- else -}}
+{{- include "astron-agent.publicHostBase" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the public URL for MinIO console access.
+*/}}
+{{- define "astron-agent.minio.consolePublicUrl" -}}
+{{- if .Values.minio.consolePublicUrl -}}
+{{- trimSuffix "/" .Values.minio.consolePublicUrl -}}
+{{- else if eq .Values.minio.service.type "NodePort" -}}
+{{- printf "%s:%d" (include "astron-agent.publicHostBase" .) (.Values.minio.service.consoleNodePort | int) -}}
+{{- else -}}
+{{- include "astron-agent.publicHostBase" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 PostgreSQL host
 */}}
 {{- define "astron-agent.postgresql.host" -}}

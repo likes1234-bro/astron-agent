@@ -1,0 +1,57 @@
+global:
+  # 公网访问地址。
+  # 如果通过公网 IP 访问，填写公网 IP，例如：http://1.2.3.4
+  # 如果通过域名访问，填写域名，例如：http://astron-agent.example.com
+  hostBaseAddress: "http://your-public-ip-or-domain"
+
+  # 讯飞平台参数。
+  # 部署前按实际环境填写。
+  platformAppId: "your-app-id"
+  platformApiKey: "your-api-key"
+  platformApiSecret: "your-api-secret"
+
+  # 华为云 CCE 常见存储类。
+  # 如果你的集群使用其他 StorageClass，请按实际情况修改。
+  storageClass: "csi-disk"
+
+ingress:
+  # 通过 Ingress 暴露服务。
+  enabled: true
+
+  # IngressClass 名称。
+  # 如果使用 NGINX Ingress Controller，通常为 nginx。
+  # 如果你的 CCE 使用其他 ingress class，例如 cce，请改成对应值。
+  className: nginx
+
+  # 如需补充 ELB 或 ingress 注解，可在这里追加。
+  annotations: {}
+
+  # 如果通过公网 IP 访问，保持空数组即可。
+  # 如果通过域名访问，改成下面这种形式：
+  # hosts:
+  #   - host: astron-agent.example.com
+  hosts: []
+
+  # 当前默认不启用 TLS。
+  tls: []
+
+casdoor:
+  mysql:
+    persistence:
+      # Casdoor MySQL 数据盘大小。
+      size: 20Gi
+
+postgresql:
+  persistence:
+    # PostgreSQL 数据盘大小。
+    size: 20Gi
+
+mysql:
+  persistence:
+    # MySQL 数据盘大小。
+    size: 20Gi
+
+redis:
+  persistence:
+    # Redis 数据盘大小。
+    size: 20Gi

@@ -1,0 +1,217 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "astron-agent.fullname" . }}-gateway-config
+  labels:
+    {{- include "astron-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+data:
+  nginx.conf: |
+    worker_processes auto;
+    worker_rlimit_nofile 65535;
+
+    events {
+        worker_connections 65535;
+        multi_accept on;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+        error_log /var/log/nginx/error.log warn;
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        client_max_body_size 20m;
+
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1000;
+        gzip_types
+            text/plain
+            text/css
+            text/xml
+            text/javascript
+            application/xml+rss
+            application/javascript
+            application/json;
+
+        server {
+            listen {{ .Values.gateway.service.port }};
+            server_name _;
+
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header X-XSS-Protection "1; mode=block" always;
+            add_header X-Content-Type-Options "nosniff" always;
+
+            location = /runtime-config.js {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-console-frontend:{{ .Values.consoleFrontend.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                expires -1;
+                add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+                add_header Pragma "no-cache";
+            }
+
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-console-frontend:{{ .Values.consoleFrontend.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+
+            location /workflow/v1/chat/completions {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-core-workflow:{{ .Values.coreWorkflow.service.port }}/workflow/v1/chat/completions;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                proxy_buffering off;
+                proxy_cache off;
+                proxy_set_header Connection '';
+                proxy_http_version 1.1;
+                chunked_transfer_encoding on;
+                proxy_set_header X-Accel-Buffering no;
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 1800s;
+                proxy_read_timeout 1800s;
+
+                add_header Cache-Control 'no-cache';
+                add_header X-Accel-Buffering 'no';
+            }
+
+            location /console-api/chat-message/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-console-hub:{{ .Values.consoleHub.service.port }}/chat-message/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                proxy_buffering off;
+                proxy_cache off;
+                proxy_set_header Connection '';
+                proxy_http_version 1.1;
+                chunked_transfer_encoding on;
+                proxy_set_header X-Accel-Buffering no;
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 1800s;
+                proxy_read_timeout 1800s;
+
+                add_header Cache-Control 'no-cache';
+                add_header X-Accel-Buffering 'no';
+            }
+
+            location /console-api/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-console-hub:{{ .Values.consoleHub.service.port }}/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location ^~ /.well-known/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location ^~ /api/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location ^~ /login/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location /logout {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location ^~ /signup/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location ^~ /static/ {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-casdoor:{{ .Values.casdoor.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location / {
+                proxy_pass http://{{ include "astron-agent.fullname" . }}-console-frontend:{{ .Values.consoleFrontend.service.port }};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+
+            location /nginx-health {
+                access_log off;
+                return 200 "nginx is healthy\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+{{- end }}

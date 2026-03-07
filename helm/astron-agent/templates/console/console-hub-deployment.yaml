@@ -45,13 +45,16 @@ spec:
         {{- range $key, $value := .Values.consoleHub.env }}
         {{- if or (eq $key "consoleCasdoorUrl") (eq $key "oauth2IssuerUri") }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.casdoor.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.casdoor.publicUrl" $ | quote }}
         {{- else if eq $key "consoleDomain" }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ $.Values.global.hostBaseAddress | quote }}
+          value: {{ include "astron-agent.gateway.publicUrl" $ | quote }}
         {{- else if eq $key "ossRemoteEndpoint" }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s:%d" $.Values.global.hostBaseAddress ($.Values.minio.service.nodePort | int) | quote }}
+          value: {{ include "astron-agent.minio.publicUrl" $ | quote }}
+        {{- else if eq $key "oauth2JwkSetUri" }}
+        - name: {{ upper (snakecase $key) }}
+          value: {{ printf "http://%s:%d/.well-known/jwks" (include "astron-agent.casdoor.host" $) ($.Values.casdoor.service.port | int) | quote }}
         {{- else if or (eq $key "platformAppId") (eq $key "sparkAppId") (eq $key "sparkRtasrAppid") (eq $key "sparkImageAppId") }}
         - name: {{ upper (snakecase $key) }}
           value: {{ $.Values.global.platformAppId | quote }}
@@ -78,7 +81,7 @@ spec:
           value: {{ $.Values.global.sparkVirtualManApiSecret | quote }}
         {{- else if eq $key "botApiMaasBaseUrl" }}
         - name: {{ upper (snakecase $key) }}
-          value: {{ printf "%s/workflow/v1/chat/completions" $.Values.global.hostBaseAddress | quote }}
+          value: {{ include "astron-agent.gateway.publicUrl" $ | quote }}
         {{- else if eq $key "mysqlPassword" }}
         - name: {{ upper (snakecase $key) }}
           valueFrom:

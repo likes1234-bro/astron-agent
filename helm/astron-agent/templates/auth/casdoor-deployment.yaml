@@ -44,12 +44,12 @@ spec:
         env:
         - name: GIN_MODE
           value: {{ .Values.casdoor.env.ginMode | quote }}
+        - name: CONSOLE_DOMAIN
+          value: {{ include "astron-agent.gateway.publicUrl" . | quote }}
         - name: origin
-          value: {{ printf "%s:%d" .Values.global.hostBaseAddress (int .Values.casdoor.service.nodePort) | quote }}
+          value: {{ include "astron-agent.casdoor.publicUrl" . | quote }}
         - name: originFrontend
-          value: {{ printf "%s:%d" .Values.global.hostBaseAddress (int .Values.casdoor.service.nodePort) | quote }}
-        - name: HOST_BASE_ADDRESS
-          value: {{ .Values.global.hostBaseAddress | default "http://localhost" | quote }}
+          value: {{ include "astron-agent.casdoor.publicUrl" . | quote }}
         ports:
         - name: http
           containerPort: 8000
